@@ -1,0 +1,10 @@
+# Install the udev rules
+
+To avoid changing the serial port number, you can install the udev rules. Be sure to check if the rule works for your device.
+
+#How to use
+
+Connect the device to you usb and run:
+python3 main.py <path_to_serial_device>
+
+If any errors, check if you have the dependencies installed with the files deps.txt
