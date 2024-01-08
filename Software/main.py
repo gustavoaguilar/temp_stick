@@ -3,6 +3,59 @@ import time
 from curses import wrapper
 import serial
 import sys
+import csv
+from datetime import datetime
+
+class Device:
+    temp = 0
+    temp_max = sys.float_info.min
+    temp_min = sys.float_info.max
+
+    humi = 0
+    humi_max = sys.float_info.min
+    humi_min = sys.float_info.max
+
+    pres = 0
+    pres_max = sys.float_info.min
+    pres_min = sys.float_info.max
+
+    probe_temp = 0
+    probe_temp_max = sys.float_info.min
+    probe_temp_min = sys.float_info.max
+
+    def __init__(self):
+        pass
+    def __str__(self):
+        pass
+    
+    def decode_sensor(self, data):
+        self.temp = float(data[0])
+
+        self.temp_min = self.temp if self.temp < self.temp_min else self.temp_min
+        self.temp_max = self.temp if self.temp > self.temp_max else self.temp_max
+
+        self.humi = float(data[1])
+        self.humi_min = self.humi if self.humi < self.humi_min else self.humi_min
+        self.humi_max = self.humi if self.humi > self.humi_max else self.humi_max
+        
+        self.pres = float(data[2])
+        self.pres_min = self.pres if self.pres < self.pres_min else self.pres_min
+        self.pres_max = self.pres if self.pres > self.pres_max else self.pres_max
+    
+    def decode_probe(self, data):
+        self.probe_temp = float(data)
+        self.probe_temp_min = self.probe_temp if self.probe_temp < self.probe_temp_min else self.probe_temp_min
+        self.probe_temp_max = self.probe_temp if self.probe_temp > self.probe_temp_max else self.probe_temp_max
+
+    def csv_header(self, csvWrite):
+        header = ["date", "temperature", "humidity", "pressure", "probe_temperature"]
+        csvWrite.writerow(header)
+
+    def csv_row(self, csvWrite):
+        data = [datetime.now().strftime("%d/%m/%Y %H:%M:%S"), self.temp, self.humi, self.pres, self.probe_temp]
+        csvWrite.writerow(data)
+
+        pass
 
 sensor_string = "Sensor:\n\tTemperature: {} C\t(Max: {} | Min: {})\n\tHumidity: {} pc\t(Max: {} | Min: {})\n\tPressure: {} hPa\t(Max: {} | Min: {})\n"
 
@@ -23,22 +76,15 @@ def detect_device(stdscr):
             time.sleep(1)
 
 def main (stdscr):
-
-    sensor_temp_max = sys.float_info.min
-    sensor_temp_min = sys.float_info.max
-
-    sensor_humi_max = sys.float_info.min
-    sensor_humi_min = sys.float_info.max
-
-    sensor_pres_max = sys.float_info.min
-    sensor_pres_min = sys.float_info.max
-
-    probe_temp_max = sys.float_info.min
-    probe_temp_min = sys.float_info.max
-
+    device = Device()
     port = detect_device(stdscr)
     content = port.read()
     
+    csvFile = open("data.csv", 'w', encoding='UTF8')
+    csvWriter = csv.writer(csvFile)
+    device.csv_header(csvWriter)
+
+    start_time = time.time()
     while content:
         stdscr.clear()
         
@@ -60,33 +106,26 @@ def main (stdscr):
             elif i == 1:
                 if(data != "no_data"):
                     values = data.split(',');
-                    temp = float(values[0])
-
-                    sensor_temp_min = temp if temp < sensor_temp_min else sensor_temp_min
-                    sensor_temp_max = temp if temp > sensor_temp_max else sensor_temp_max
-
-                    humi = float(values[1])
-                    sensor_humi_min = humi if humi < sensor_humi_min else sensor_humi_min
-                    sensor_humi_max = humi if humi > sensor_humi_max else sensor_humi_max
-                    
-                    pres = float(values[2])
-                    sensor_pres_min = pres if pres < sensor_pres_min else sensor_pres_min
-                    sensor_pres_max = pres if pres > sensor_pres_max else sensor_pres_max
-                    
-                    stdscr.addstr(sensor_string.format(temp, sensor_temp_max, sensor_temp_min, humi, sensor_humi_max, sensor_humi_min, pres, sensor_pres_max, sensor_pres_min))
+                    device.decode_sensor(values)
+                    stdscr.addstr(sensor_string.format(device.temp, device.temp_max, device.temp_min, device.humi, device.humi_max, device.humi_min, device.pres, device.pres_max, device.pres_min))
                 else:
                     stdscr.addstr("No Sensor Detected")
             else:
                 if(data != "no_data"):
-                    probe_temp = float(data)
-                    probe_temp_min = probe_temp if probe_temp < probe_temp_min else probe_temp_min
-                    probe_temp_max = probe_temp if probe_temp > probe_temp_max else probe_temp_max
+                    device.decode_probe(data)
                     stdscr.addstr("Probe:\n")
-                    stdscr.addstr("\tTemperature: {} C\t(Max: {} | Min: {})".format(probe_temp, probe_temp_max, probe_temp_min))
+                    stdscr.addstr("\tTemperature: {} C\t(Max: {} | Min: {})".format(device.probe_temp, device.probe_temp_max, device.probe_temp_min))
                 else:
                     stdscr.addstr("\tNo Probe Detected")
 
+        end_time = time.time()
+        if (sys.argv[2]):
+            if(end_time - start_time >= float(sys.argv[2])):
+                device.csv_row(csvWriter)
+                start_time = end_time
+
+        time.sleep(1)
         stdscr.refresh()
+    csvFile.close()
 
 wrapper(main)
-    
