@@ -62,3 +62,19 @@ void Device::print(void){
 
     std::cout << "Probe: " << prob << std::endl;
 }
+
+std::string Device::generateCsvRow(void){
+    std::string row = std::string("");
+    row.append(name);
+    row.append(",");
+    
+    row.append(std::to_string(temp));
+    row.append(",");
+    row.append(std::to_string(humi));
+    row.append(",");
+    row.append(std::to_string(pres));
+    row.append(",");
+
+    row.append(std::to_string(prob));
+    return row;
+}

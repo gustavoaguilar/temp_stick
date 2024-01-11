@@ -13,7 +13,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#define TEST 1
+#define TEST 0
 
 char read_buf[512];
 int serial_port;
@@ -30,6 +30,7 @@ int init_serial(std::string path, int& serial_port, struct termios& tty){
         std::cout << "Failed getting config from device\n";
     }
     std::cout << "Initialized device\n";
+    std::cout << "Another String !!\n";
 
     tty.c_cflag &= ~PARENB;
     tty.c_cflag &= ~CSTOPB;
@@ -70,9 +71,10 @@ int main(void){
     Font font = LoadFont("../res/Montserrat-Medium.ttf");
 
     Device dev;
+    dev.newData = false;
     
     #if(!TEST)
-        if(init_serial("/dev/ttyUSB0", serial_port, tty)){
+        if(init_serial("/dev/ttyACM0", serial_port, tty)){
             exit(1);
         }
     #endif
@@ -99,6 +101,7 @@ int main(void){
                 dev.parse_internal(token_vector[index]);
                 break;
             case 2:
+                dev.newData = true;
                 if(!token_vector[index].find("no_data") != std::string::npos){
                     dev.prob = std::stof(token_vector[index]);
                 }
@@ -107,7 +110,10 @@ int main(void){
                 break;
             }
         }
-
+        if(dev.newData){
+            std::cout << dev.generateCsvRow() << std::endl;
+            dev.newData = false;
+        }
         // dev.print();
 
         BeginDrawing();
