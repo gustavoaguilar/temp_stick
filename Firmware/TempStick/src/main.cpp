@@ -10,12 +10,12 @@
 #include <DallasTemperature.h>
 
 #define DEVICE_STRING "<TempStick 0> | "
-#define BUTTON_PIN 4
+#define BUTTON_PIN 0
 
 Adafruit_BME280 bme280;
 Adafruit_SSD1306 display = Adafruit_SSD1306(128, 32, &Wire);
 
-OneWire oneWire(15);
+OneWire oneWire(10);
 DallasTemperature external_sensor(&oneWire);
 DeviceAddress temp_addr;
 
@@ -174,7 +174,10 @@ void burningAvoider(void* parameter){
     while(1){
         isInverted = !isInverted;
         display.invertDisplay(isInverted);
-        vTaskDelay(5000);
+        if(isInverted)
+            vTaskDelay(1000);
+        else
+            vTaskDelay(10000);
     }
 }
 
@@ -182,7 +185,7 @@ void setup(){
     pinMode(BUTTON_PIN, INPUT_PULLDOWN);
     pinMode(22, INPUT_PULLUP);
     pinMode(21, INPUT_PULLUP);
-    
+
     while(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)){
         // Serial.println("Failed Initializing display");
         vTaskDelay(1000);
@@ -199,7 +202,7 @@ void setup(){
     xTaskCreate(sendDataSerial, "SerialData", 10000, NULL, 1, NULL);
     xTaskCreate(screenDisplay, "Display", 10000, NULL, 1, NULL);
     xTaskCreate(getDataFromSensor, "GetData", 10000, NULL, 1, NULL);
-    // xTaskCreate(buttonPressSimulator, "SimulatedButton", 10000, NULL, 1, NULL);
+    // xTaskCreate(buttonPressSimulator, "SimulatedButton", 10000, NULL, 1, NULL);   
 }
 
 void loop(){
