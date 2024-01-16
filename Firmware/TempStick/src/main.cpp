@@ -9,6 +9,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+#include "device.hpp"
+
 #define DEVICE_STRING "<TempStick 0> | "
 #define BUTTON_PIN 0
 
@@ -19,48 +21,13 @@ OneWire oneWire(10);
 DallasTemperature external_sensor(&oneWire);
 DeviceAddress temp_addr;
 
-struct{
-    bool isAvailable;
-    float temperature;
-    float humidity;
-    float pressure;
-}internal_data;
-
-struct{
-    bool isAvailable;
-    float temperature;
-}external_data;
-
-typedef enum {
-    SCREEN_INTERNAL = 0,
-    SCREEN_EXTERNAL,
-    SCREEN_BLUETOOTH,
-}ScreenState;
-
-ScreenState screenState = SCREEN_INTERNAL;
-
-void buttonPress(void){
-    switch (screenState){
-    case SCREEN_INTERNAL:
-        screenState = SCREEN_EXTERNAL;
-        break;
-    case SCREEN_EXTERNAL:
-        screenState = SCREEN_INTERNAL;
-        break;
-    // case SCREEN_BLUETOOTH:
-    //     screenState = SCREEN_INTERNAL;
-    //     break;
-    default:
-        screenState = SCREEN_INTERNAL;
-        break;
-    }
-}
+Device dev;
 
 void detectBME280(void){
     if(!bme280.begin(0x76, &Wire)){
-        internal_data.isAvailable = false;
+        dev.InternalAvailable(false);
     }else{
-        internal_data.isAvailable = true;
+        dev.InternalAvailable(true);
     }
 }
 
@@ -69,24 +36,20 @@ void getDataFromSensor(void* parameter){
     external_sensor.begin();
     
     while(true){
-        if(internal_data.isAvailable){
-            internal_data.temperature = bme280.readTemperature();
-            internal_data.humidity = bme280.readHumidity();
-            internal_data.pressure = bme280.readPressure() / 100.0;
+        if(dev.IsInternalAvailable()){
+            dev.UpdateInternalValues({bme280.readTemperature(), bme280.readHumidity(),bme280.readPressure() / 100.0});
         } else {
-            internal_data.temperature = 0;
-            internal_data.humidity = 0;
-            internal_data.pressure = 0;
+            dev.UpdateInternalValues({0, 0, 0});
             detectBME280();
         }
 
         external_sensor.requestTemperatures(); // Send the command to get temperatures
         if(!external_sensor.getAddress(temp_addr, 0)){
-            external_data.isAvailable = false;
-            external_data.temperature = 0;
+            dev.UpdateExternalValues(0);
+            dev.ExternalAvailable(false);
         } else {
-            external_data.temperature = external_sensor.getTempC(temp_addr);
-            external_data.isAvailable = true;
+            dev.UpdateExternalValues(external_sensor.getTempC(temp_addr));
+            dev.ExternalAvailable(true);
         }
 
         vTaskDelay(1000);
@@ -94,24 +57,26 @@ void getDataFromSensor(void* parameter){
 }
 
 void sendDataSerial(void* parameter){
-    Serial.begin(9600);
     while(true){
         Serial.print(DEVICE_STRING);
-
         //Internal Sensor
-        if(internal_data.isAvailable)
+        if(dev.IsInternalAvailable()){
+            auto internal_data = dev.GetInternalValues();
             Serial.printf("%.02f, %.02f, %.02f | ",
-                        internal_data.temperature,
-                        internal_data.humidity,
-                        internal_data.pressure);
-        else
+                        std::get<0>(internal_data),
+                        std::get<1>(internal_data),
+                        std::get<2>(internal_data));
+        } else {
             Serial.printf("no_data | ");
+        }
         
         //External Sensor
-        if(external_data.isAvailable)
-            Serial.printf("%.02f\n", external_data.temperature);
-        else
+        if(dev.IsExternalAvailable()){
+            auto external_data = dev.GetExternalValues();
+            Serial.printf("%.02f\n", external_data);
+        } else {
             Serial.printf("no_data\n");
+        }
         
         vTaskDelay(1000);
     }
@@ -119,7 +84,7 @@ void sendDataSerial(void* parameter){
 
 void buttonPressSimulator(void* parameter){
     while(true){
-        buttonPress();
+        dev.ButtonPress();
         vTaskDelay(1000);
     }
 }
@@ -133,29 +98,31 @@ void screenDisplay(void* parameter){
     while(true){
         display.clearDisplay();
         
-        switch (screenState){
-        case SCREEN_INTERNAL:
-            if(internal_data.isAvailable){
+        switch (dev.ScreenState()){
+        case ScreenState_t::SCREEN_INTERNAL:
+            if(dev.IsInternalAvailable()){
                 display.setCursor(0,0);
+
+                auto internal_data = dev.GetInternalValues();
                 display.printf("Temperature: %.02fC\nHumidity: %.02fpc\nPressure: %.02fhPa\nSensor: Internal",
-                    internal_data.temperature,
-                    internal_data.humidity,
-                    internal_data.pressure);
+                    std::get<0>(internal_data),
+                    std::get<1>(internal_data),
+                    std::get<2>(internal_data));
             } else {
                 display.setCursor(0,0);
                 display.printf("Internal sensor not available");
             }
             break;
-        case SCREEN_EXTERNAL:
+        case ScreenState_t::SCREEN_EXTERNAL:
             display.setCursor(0,0);
-            if(external_data.isAvailable){
+            if(dev.IsExternalAvailable()){
                 display.printf("Temperature: %.02fC\n\n\nSensor: Probe",
-                    external_data.temperature);
+                    dev.GetExternalValues());
             }else{
                 display.printf("Sensor not connected\n\n\nSensor: Probe");
             }
             break;
-        case SCREEN_BLUETOOTH:
+        case ScreenState_t::SCREEN_BLUETOOTH:
             display.setCursor(0,0);
             display.print("Bluetooth");
             break;
@@ -185,9 +152,11 @@ void setup(){
     pinMode(BUTTON_PIN, INPUT_PULLDOWN);
     pinMode(22, INPUT_PULLUP);
     pinMode(21, INPUT_PULLUP);
-
+    
+    Serial.begin(9600);
+    
     while(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)){
-        // Serial.println("Failed Initializing display");
+        Serial.println("Failed Initializing display");
         vTaskDelay(1000);
     }
 
@@ -196,18 +165,18 @@ void setup(){
         "BurningAvoider", /* String with name of task. */
         10000,            /* Stack size in bytes. */
         NULL,             /* Parameter passed as input of the task */
-        1,                /* Priority of the task. */
+        3,                /* Priority of the task. */
         NULL);            /* Task handle. */
 
     xTaskCreate(sendDataSerial, "SerialData", 10000, NULL, 1, NULL);
-    xTaskCreate(screenDisplay, "Display", 10000, NULL, 1, NULL);
+    xTaskCreate(screenDisplay, "Display", 10000, NULL, 2, NULL);
     xTaskCreate(getDataFromSensor, "GetData", 10000, NULL, 1, NULL);
     // xTaskCreate(buttonPressSimulator, "SimulatedButton", 10000, NULL, 1, NULL);   
 }
 
 void loop(){
     if(digitalRead(BUTTON_PIN)){
-        buttonPress();
+        dev.ButtonPress();
         delay(1000);
     }
 }
