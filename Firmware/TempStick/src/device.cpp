@@ -6,14 +6,14 @@ void Device::ButtonPress(){
         screen_state_ = ScreenState_t::SCREEN_EXTERNAL;
         break;
     case ScreenState_t::SCREEN_EXTERNAL:
-        screen_state_ = ScreenState_t::SCREEN_WIFI;
+        screen_state_ = ScreenState_t::SCREEN_OFF;
         break;
-    // case ScreenState::SCREEN_BLUETOOTH:
-    //     screenState = SCREEN_INTERNAL;
-    //     break;
-    case ScreenState_t::SCREEN_WIFI:
+    case ScreenState_t::SCREEN_OFF:
         screen_state_ = ScreenState_t::SCREEN_INTERNAL;
         break;
+    // case ScreenState_t::SCREEN_WIFI:
+    //     screen_state_ = ScreenState_t::SCREEN_INTERNAL;
+    //     break;
     default:
         screen_state_ = ScreenState_t::SCREEN_INTERNAL;
         break;

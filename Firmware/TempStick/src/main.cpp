@@ -126,6 +126,9 @@ void screenDisplay(void* parameter){
             display.setCursor(0,0);
             display.print("Bluetooth");
             break;
+        case ScreenState_t::SCREEN_OFF:
+            // Do nothing and disables the burn in avoider
+            break;
         default:
             break;
         }
@@ -139,6 +142,10 @@ void burningAvoider(void* parameter){
     int isInverted = 0;
   
     while(1){
+        if(dev.ScreenState() == ScreenState_t::SCREEN_OFF && !isInverted){
+            vTaskDelay(1000);
+            continue;
+        }
         isInverted = !isInverted;
         display.invertDisplay(isInverted);
         if(isInverted)

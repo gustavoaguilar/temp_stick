@@ -6,6 +6,7 @@ enum class ScreenState_t{
     SCREEN_EXTERNAL,
     SCREEN_BLUETOOTH,
     SCREEN_WIFI,
+    SCREEN_OFF,
 };
 
 class Device{
