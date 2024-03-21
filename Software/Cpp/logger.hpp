@@ -18,4 +18,5 @@ private:
     std::string file_path_;
     std::string GetDateString();
     bool CheckOpenNewFile();
+    std::ofstream TryOpenFile(std::string path);
 };

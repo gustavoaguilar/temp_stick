@@ -8,11 +8,7 @@ Logger::Logger(std::string filename){
     file_path_ = file_name_ + "_" + current_date_ + ".txt";
     
     // std::cout << "Created logger: " << filename << std::endl;
-    
-    do{
-        // std::cout << "Trying to open: " << file_path_ << std::endl;
-        file_descriptor_.open(file_path_, std::ios::app);
-    }while (!file_descriptor_.is_open());
+    file_descriptor_ = TryOpenFile(file_path_);
 }
 
 Logger::~Logger(){
@@ -54,13 +50,27 @@ bool Logger::CheckOpenNewFile(){
         }
         
         file_path_ = file_name_ + "_" + current_date_ + ".txt";
-        
-        do{
-            // std::cout << "Trying to open: " << file_path_ << std::endl;
-            file_descriptor_.open(file_path_, std::ios::app);
-        }while (!file_descriptor_.is_open());
-     
+        file_descriptor_ = TryOpenFile(file_path_);
+
         return true;
     }
     return false;
+}
+
+std::ofstream Logger::TryOpenFile(std::string path){
+    int fail_count = 0;
+    std::ofstream file_descriptor;
+
+    do{
+        
+        std::cout << "Trying to open: " << path << std::endl;
+        file_descriptor.open(path, std::ios::app);
+        if(fail_count >= 5 && file_descriptor.is_open() == false){
+            std::cout << "Failed open file: " << path << ". Abort!\n";
+            exit(1);
+        }
+        fail_count++;
+    }while (!file_descriptor.is_open());
+    
+    return file_descriptor;
 }

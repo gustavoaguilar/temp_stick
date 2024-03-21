@@ -80,6 +80,8 @@ int main(int argc, char const *argv[]){
             std::string data = std::string("TempStick 0 | 12.3, 45.6, 78.9 | 32.1");
         #endif
 
+        std::cout << "Data received: " << data;
+
         auto token_vector = dev.parse_input(data);
         for (auto it = token_vector.begin(); it != token_vector.end(); ++it) {
             int index = std::distance(token_vector.begin(), it);
