@@ -9,15 +9,19 @@
 #include <errno.h>
 #include <termios.h>
 #include <unistd.h>
+#include "logger.hpp"
 
-#define TEST 1
+#define TEST 0
 
 char read_buf[512];
 int serial_port;
 struct termios tty;
 
+int logger_counter = 0;
+Logger logger("out/temp_stick");
+
 int init_serial(std::string path, int& serial_port, struct termios& tty){
-    serial_port = open("/dev/ttyUSB0", O_RDONLY);
+    serial_port = open("/dev/ttyACM0", O_RDONLY);
     if (serial_port < 0){
         std::cout << "Failed to open device\n";
         return -1;
@@ -96,7 +100,13 @@ int main(int argc, char const *argv[]){
             }
         }
 
-        dev.print();
+        // dev.print();
+        if(logger_counter < 60){
+            logger_counter++;
+        }else{
+            logger.Log(dev.to_string());
+            logger_counter = 0;
+        }
     }
 
     return 0;

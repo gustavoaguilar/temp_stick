@@ -62,3 +62,10 @@ void Device::print(void){
 
     std::cout << "Probe: " << prob << std::endl;
 }
+
+std::string Device::to_string(){
+    char output[64];
+
+    snprintf(output, 64, "%s,%.2f,%.2f,%.2f,%.2f\n", name.c_str(), temp, humi, pres, prob);
+    return std::string(output);
+}
