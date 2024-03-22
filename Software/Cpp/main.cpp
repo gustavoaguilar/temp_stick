@@ -21,7 +21,7 @@ int logger_counter = 0;
 Logger logger("out/temp_stick");
 
 int init_serial(std::string path, int& serial_port, struct termios& tty){
-    serial_port = open("/dev/ttyACM0", O_RDONLY);
+    serial_port = open(path.c_str(), O_RDONLY);
     if (serial_port < 0){
         std::cout << "Failed to open device\n";
         return -1;
@@ -67,13 +67,17 @@ int main(int argc, char const *argv[]){
     Device dev;
     
     #if(!TEST)
-        if(init_serial("/dev/ttyUSB0", serial_port, tty)){
+        if(init_serial("/dev/temp-stick", serial_port, tty)){
             exit(1);
         }
     #endif
 
     while(true){
         #if(!TEST)
+            //Debug clear the buffer before new read
+            for(int i = 0; i < 512; ++i){
+                read_buf[i] = 0;
+            }
             (void) read(serial_port, &read_buf, sizeof(read_buf));
             std::string data = std::string(read_buf);
         #else
