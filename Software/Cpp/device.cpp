@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-std::vector<std::string> Device::parse_input(const std::string input){
+bool Device::parse_input(const std::string input){
     std::string input_tmp(input.c_str());
     std::vector<std::string> result_vector = std::vector<std::string>();
 
@@ -16,7 +16,34 @@ std::vector<std::string> Device::parse_input(const std::string input){
     while(getline(ss, tmp, '|')){
         result_vector.push_back(std::string(tmp.c_str()));
     }
-    return result_vector;
+
+    if(result_vector.size() > 3){
+        // too many stuff, abort and send no tokens in the vector
+        // std::cout << "There are " << result_vector.size() << " fields in the vector\n";
+        result_vector.clear();
+        return false;
+    }
+
+    for (auto it = result_vector.begin(); it != result_vector.end(); ++it) {
+        int index = std::distance(result_vector.begin(), it);
+        switch (index){
+        case 0:
+            name = result_vector[index];
+            break;
+        case 1:
+            parse_internal(result_vector[index]);
+            break;
+        case 2:
+            if(!result_vector[index].find("no_data") != std::string::npos){
+                prob = std::stof(result_vector[index]);
+            }
+            break;        
+        default:
+            break;
+        }
+    }
+
+    return true;
 }
 
 

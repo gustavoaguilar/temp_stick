@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "logger.hpp"
 
-#define TEST 0
+#define TEST 1
 
 char read_buf[512];
 int serial_port;
@@ -68,45 +68,26 @@ int main(int argc, char const *argv[]){
     
     #if(!TEST)
         if(init_serial("/dev/temp-stick", serial_port, tty)){
+    #else
+        if(init_serial("simulator/virtual-device", serial_port, tty)){
+    #endif
             exit(1);
         }
-    #endif
 
     while(true){
-        #if(!TEST)
-            //Debug clear the buffer before new read
-            for(int i = 0; i < 512; ++i){
-                read_buf[i] = 0;
-            }
-            (void) read(serial_port, &read_buf, sizeof(read_buf));
-            std::string data = std::string(read_buf);
-        #else
-            std::string data = std::string("TempStick 0 | 12.3, 45.6, 78.9 | 32.1");
-        #endif
+        //Debug clear the buffer before new read
+        for(int i = 0; i < 512; ++i){
+            read_buf[i] = 0;
+        }
+        (void) read(serial_port, &read_buf, sizeof(read_buf));
+        std::string data = std::string(read_buf);
 
-        std::cout << "Data received: " << data;
+        std::cout << "Data received: " << data << std::endl;
 
-        auto token_vector = dev.parse_input(data);
-        for (auto it = token_vector.begin(); it != token_vector.end(); ++it) {
-            int index = std::distance(token_vector.begin(), it);
-            switch (index){
-            case 0:
-                dev.name = token_vector[index];
-                break;
-            case 1:
-                dev.parse_internal(token_vector[index]);
-                break;
-            case 2:
-                if(!token_vector[index].find("no_data") != std::string::npos){
-                    dev.prob = std::stof(token_vector[index]);
-                }
-                break;        
-            default:
-                break;
-            }
+        if(!dev.parse_input(data)){
+            std::cout << "Failed parsing data\n";
         }
 
-        // dev.print();
         if(logger_counter < 60){
             logger_counter++;
         }else{
