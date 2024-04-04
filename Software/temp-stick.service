@@ -1,0 +1,6 @@
+[Unit]
+After=multi-user.target
+[Service]
+ExecStart= /home/owl/temp_stick/Software/Cpp/temp_stick
+[Install]
+WantedBy=default.target
