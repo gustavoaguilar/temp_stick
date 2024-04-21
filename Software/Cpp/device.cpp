@@ -34,7 +34,7 @@ bool Device::parse_input(const std::string input){
             parse_internal(result_vector[index]);
             break;
         case 2:
-            if(!result_vector[index].find("no_data") != std::string::npos){
+            if(result_vector[index] != "no_data"){
                 prob = std::stof(result_vector[index]);
             }
             break;        
