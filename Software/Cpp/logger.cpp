@@ -9,6 +9,7 @@ Logger::Logger(std::string filename){
     
     // std::cout << "Created logger: " << filename << std::endl;
     file_descriptor_ = TryOpenFile(file_path_);
+    enableTimestamp = true;
 }
 
 Logger::~Logger(){
@@ -26,6 +27,18 @@ std::string Logger::GetDateString(){
     return std::string(result);
 }
 
+std::string Logger::GetLogTimestamp(){
+    auto time = std::chrono::system_clock::now();
+	std::time_t time_decoded = std::chrono::system_clock::to_time_t(time);
+	struct tm* t = localtime(&time_decoded);
+    
+    char result[128];
+    snprintf(result, 128, "%.4d/%.2d/%.2d %.2d:%.2d:%.2d",
+             t->tm_year - 100 + 2000, t->tm_mon + 1, t->tm_mday,
+             t->tm_hour, t->tm_min, t->tm_sec);
+    return std::string(result);
+}
+
 std::string Logger::GetFilePath(){
     return file_path_;
 }
@@ -33,6 +46,10 @@ std::string Logger::GetFilePath(){
 void Logger::Log(std::string data){
     CheckOpenNewFile();
     if(file_descriptor_.is_open()){
+        if(enableTimestamp){
+            file_descriptor_ << GetLogTimestamp() << ",";
+        }
+
         file_descriptor_ << data;
         file_descriptor_.flush();
     }
