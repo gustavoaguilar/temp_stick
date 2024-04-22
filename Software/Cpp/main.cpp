@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include "logger.hpp"
 
-#define TEST 1
+#define TEST 0
 
 char read_buf[512];
 int serial_port;
@@ -88,7 +88,7 @@ int main(int argc, char const *argv[]){
             std::cout << "Failed parsing data\n";
         }
 
-        if(logger_counter < 60){
+        if(logger_counter < 59){
             logger_counter++;
         }else{
             logger.Log(dev.to_string());
