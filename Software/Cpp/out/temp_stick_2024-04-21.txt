@@ -1,0 +1,5 @@
+TempStickTest,1.04,1.04,1.04,0.00
+TempStickTest,1.65,1.65,1.65,0.00
+TempStickTest,2.26,2.26,2.26,0.00
+TempStickTest,3.32,3.32,3.32,0.00
+TempStickTest,3.93,3.93,3.93,0.00
