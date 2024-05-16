@@ -14,7 +14,11 @@ int main() {
 
   while (true) {
     char blabla[64];
-    snprintf(blabla, 64, "TempStick Test | %.2f, %.2f, %.2f | %.2f", temp, humi, pres, prob);
+    snprintf(blabla, 64, "TempStickTest | %.2f, %.2f, %.2f | %.2f", temp, humi, pres, prob);
+    //snprintf(blabla, 64, "TempStickTest | no_data | %.2f", prob);
+    //snprintf(blabla, 64, "TempStickTest | %.2f, %.2f, %.2f | no_data", temp, humi, pres);
+    //snprintf(blabla, 64, "TempStickTest | %.2f, %.2f, %.2f | %.2f | 13 |tempstick|513", temp, humi, pres, prob);
+    //snprintf(blabla, 64, "TempStickTest | 123, 3");
     message = string(blabla);
     
     cout << message << endl;
